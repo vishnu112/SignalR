@@ -458,12 +458,13 @@
                     return;
                 }
 
+                try {
                 connection._.onFailedTimeoutHandle = window.setTimeout(function () {
                     connection.log(transport.name + " timed out when trying to connect.");
                     onFailed();
                 }, connection.transportConnectTimeout);
 
-                transport.start(connection, function () { // success
+                    transport.start(connection, function () { // success
                     if (!initializationComplete) {
                         initializationComplete = true;
 
@@ -490,6 +491,11 @@
                         });
                     }
                 }, onFailed);
+                }
+                catch (error) {
+                    connection.log("SignalR: " + transport.name + " transport threw '" + error.message + "' when attempting to start.");
+                    onFailed();
+                }
             };
 
             var url = connection.url + "/negotiate";
@@ -1259,14 +1265,13 @@
 
         lostConnection: function (connection) {
             this.reconnect(connection);
-
         },
 
         stop: function (connection) {
             // Don't trigger a reconnect after stopping
             transportLogic.clearReconnectTimeout(connection);
 
-            if (connection.socket !== null) {
+            if (connection.socket) {
                 connection.log("Closing the Websocket");
                 connection.socket.close();
                 connection.socket = null;
